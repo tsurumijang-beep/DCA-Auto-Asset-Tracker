@@ -326,7 +326,7 @@
         .edit-btn { background-color: #feebc8; color: #dd6b20; }
         .delete-btn { background-color: #fed7d7; color: #c53030; }
 
-        /* 💻 PC 반응형 스타일 */
+        /* 💻 PC 반응型 스타일 */
         @media (min-width: 1024px) {
             header {
                 margin-bottom: 16px;
@@ -369,7 +369,7 @@
                     <option value="ALL" data-i18n="allAssets">全資産（合計）</option>
                 </select>
             </div>
-            <!-- 언어 선택 메뉴 (일/영/한/중/스페인어) -->
+            <!-- 언어 선택 메뉴 -->
             <div class="lang-select-container">
                 <label for="langSelect">🌐</label>
                 <select id="langSelect" onchange="changeLanguage(this.value)">
@@ -476,7 +476,6 @@
 </div>
 
 <script>
-    // 🌐 다국어 사전 (i18n) - ja, en, ko, zh, es
     const i18n = {
         ja: {
             title: "📈 積立投資 自動資産管理",
@@ -708,10 +707,8 @@
     let records = JSON.parse(localStorage.getItem(STORAGE_RECORDS_KEY)) || [
         { assetId: 'asset_1', date: '2026-01-01', evalAmt: 0 },
         { assetId: 'asset_1', date: '2026-04-01', evalAmt: 155000 },
-        { assetId: 'asset_1', date: '2026-08-01', evalAmt: 365000 },
         { assetId: 'asset_2', date: '2026-01-01', evalAmt: 0 },
-        { assetId: 'asset_2', date: '2026-04-01', evalAmt: 100000 },
-        { assetId: 'asset_2', date: '2026-08-01', evalAmt: 240000 }
+        { assetId: 'asset_2', date: '2026-04-01', evalAmt: 100000 }
     ];
 
     let editingIndex = -1;
@@ -880,6 +877,14 @@
         return `${month}/${day}`;
     }
 
+    function getTodayISO() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function calculatePrincipalForAsset(asset, targetDateStr) {
         const start = new Date(asset.startDate + 'T00:00:00');
         const target = new Date(targetDateStr + 'T00:00:00');
@@ -1020,15 +1025,23 @@
 
     function buildSummaryAndChartData(filterAssetId) {
         const dict = i18n[currentLang];
+        const todayStr = getTodayISO();
+
         const filteredRecords = filterAssetId === 'ALL' 
             ? records 
             : records.filter(r => r.assetId === filterAssetId);
 
-        const uniqueDates = [...new Set(filteredRecords.map(r => r.date))].sort((a, b) => new Date(a) - new Date(b));
+        // 오늘 날짜를 차트 축 목록에 자동 통합
+        let dateList = filteredRecords.map(r => r.date);
+        if (!dateList.includes(todayStr)) {
+            dateList.push(todayStr);
+        }
+
+        const uniqueDates = [...new Set(dateList)].sort((a, b) => new Date(a) - new Date(b));
 
         const chartLabels = [];
         const principalSeries = [];
-        var evalSeries = [];
+        const evalSeries = [];
 
         let latestPrincipal = 0;
         let latestEval = 0;
@@ -1047,14 +1060,18 @@
                 const p = calculatePrincipalForAsset(asset, dateStr);
                 const assetRecs = records.filter(r => r.assetId === asset.id && r.date <= dateStr).sort((a, b) => new Date(b.date) - new Date(a.date));
                 
+                dayPrincipalTotal += p;
+
                 if (assetRecs.length > 0) {
-                    dayPrincipalTotal += p;
                     dayEvalTotal += assetRecs[0].evalAmt;
                     hasData = true;
+                } else {
+                    dayEvalTotal += 0;
                 }
             });
 
-            if (hasData) {
+            // 데이터가 존재하거나, 오늘 날짜(자동반영)인 경우 차트에 포함
+            if (hasData || dateStr === todayStr) {
                 chartLabels.push(formatDateShort(dateStr));
                 principalSeries.push(dayPrincipalTotal);
                 evalSeries.push(dayEvalTotal);
@@ -1065,7 +1082,13 @@
             }
         });
 
-        if (latestDateStr && assetRules.length > 0) {
+        // 오늘 시점 실시간 종합 현황 표시
+        const todayPrincipalTotal = assetRules.reduce((acc, a) => {
+            if (filterAssetId !== 'ALL' && a.id !== filterAssetId) return acc;
+            return acc + calculatePrincipalForAsset(a, todayStr);
+        }, 0);
+
+        if (assetRules.length > 0) {
             let startDateStr;
             if (filterAssetId === 'ALL') {
                 startDateStr = assetRules.reduce((earliest, a) => a.startDate < earliest ? a.startDate : earliest, assetRules[0].startDate);
@@ -1075,16 +1098,16 @@
             }
 
             const start = new Date(startDateStr + 'T00:00:00');
-            const end = new Date(latestDateStr + 'T00:00:00');
+            const end = new Date(todayStr + 'T00:00:00');
             const diffDays = Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24)));
             const diffMonths = Math.max(0, (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()));
 
             document.getElementById('summaryDays').innerText = `${diffDays}${dict.unitDays} (${diffMonths}${dict.unitMonths})`;
-            document.getElementById('summaryPrincipal').innerText = formatJPY(latestPrincipal);
+            document.getElementById('summaryPrincipal').innerText = formatJPY(todayPrincipalTotal);
             document.getElementById('summaryEval').innerText = formatJPY(latestEval);
 
-            const totalProfit = latestEval - latestPrincipal;
-            const totalRate = latestPrincipal > 0 ? ((totalProfit / latestPrincipal) * 100).toFixed(2) : '0.00';
+            const totalProfit = latestEval - todayPrincipalTotal;
+            const totalRate = todayPrincipalTotal > 0 ? ((totalProfit / todayPrincipalTotal) * 100).toFixed(2) : '0.00';
             const profitElem = document.getElementById('summaryProfit');
             profitElem.innerText = `${formatJPY(totalProfit)} (${totalRate}%)`;
             profitElem.className = `value ${totalProfit >= 0 ? 'positive' : 'negative'}`;
