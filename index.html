@@ -1043,9 +1043,7 @@
         const principalSeries = [];
         const evalSeries = [];
 
-        let latestPrincipal = 0;
         let latestEval = 0;
-        let latestDateStr = null;
 
         uniqueDates.forEach(dateStr => {
             let dayPrincipalTotal = 0;
@@ -1076,13 +1074,11 @@
                 principalSeries.push(dayPrincipalTotal);
                 evalSeries.push(dayEvalTotal);
 
-                latestPrincipal = dayPrincipalTotal;
                 latestEval = dayEvalTotal;
-                latestDateStr = dateStr;
             }
         });
 
-        // 오늘 시점 실시간 종합 현황 표시
+        // 오늘 시점 실시간 종합 현황 표시(=開始日から今日までの累積投資元本)
         const todayPrincipalTotal = assetRules.reduce((acc, a) => {
             if (filterAssetId !== 'ALL' && a.id !== filterAssetId) return acc;
             return acc + calculatePrincipalForAsset(a, todayStr);
