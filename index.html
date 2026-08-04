@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -41,7 +42,6 @@
             gap: 8px;
             flex-wrap: wrap;
         }
-        /* 📱 画面幅に応じて文字サイズを動的に可変させる設定 (clamp) */
         h1 {
             font-size: clamp(0.9rem, 3.5vw, 1.2rem);
             color: #1a365d;
@@ -84,7 +84,7 @@
             text-overflow: ellipsis;
         }
 
-        /* 📱 モバイル専用 タブメニュー */
+        /* モバイル用タブナビゲーション */
         .tab-nav {
             display: flex;
             background: #e2e8f0;
@@ -114,7 +114,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        /* レイアウト構造 */
+        /* レイアウト */
         .main-layout {
             display: flex;
             flex-direction: column;
@@ -162,6 +162,32 @@
             font-size: clamp(0.75rem, 2.5vw, 0.9rem);
             background-color: #fff;
         }
+
+        .calc-preview-box {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            background: #edf2f7;
+            padding: 8px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #cbd5e0;
+        }
+        .calc-preview-item {
+            text-align: center;
+        }
+        .calc-preview-item .p-label {
+            font-size: clamp(0.6rem, 1.8vw, 0.7rem);
+            color: #4a5568;
+            font-weight: bold;
+        }
+        .calc-preview-item .p-value {
+            font-size: clamp(0.75rem, 2.4vw, 0.88rem);
+            font-weight: bold;
+            color: #2b6cb0;
+            margin-top: 2px;
+        }
+
         .asset-item-card {
             background: #f8fafc;
             border: 1px solid #cbd5e0;
@@ -195,7 +221,6 @@
         .asset-status-badge.active { background: #c6f6d5; color: #22543d; }
         .asset-status-badge.paused { background: #e2e8f0; color: #4a5568; }
 
-        /* カード内の編集可能なミニサマリー領域 */
         .asset-mini-summary {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -224,6 +249,11 @@
             color: #2b6cb0;
             padding: 2px;
             border-radius: 6px;
+        }
+        .mini-box input[readonly] {
+            background-color: #edf2f7;
+            color: #4a5568;
+            border-color: #cbd5e0;
         }
 
         .btn-remove-asset {
@@ -349,7 +379,6 @@
         .edit-btn { background-color: #feebc8; color: #dd6b20; }
         .delete-btn { background-color: #fed7d7; color: #c53030; }
 
-        /* 極小画面モバイル (iPhone SE等) の微調整 */
         @media (max-width: 380px) {
             header {
                 flex-direction: column;
@@ -364,7 +393,6 @@
             }
         }
 
-        /* 💻 PC レスポンシブスタイル */
         @media (min-width: 1024px) {
             header {
                 margin-bottom: 16px;
@@ -402,13 +430,12 @@
                     <option value="ALL" data-i18n="allAssets">全資産（合計）</option>
                 </select>
             </div>
-            <!-- 言語選択メニュー -->
             <div class="lang-select-container">
                 <label for="langSelect">🌐</label>
                 <select id="langSelect" onchange="changeLanguage(this.value)">
                     <option value="ja">日本語</option>
                     <option value="en">English</option>
-                    <option value="ko">한국어</option>
+                    <option value="ko">韓国語</option>
                     <option value="zh">中文</option>
                     <option value="es">Español</option>
                 </select>
@@ -416,7 +443,6 @@
         </div>
     </header>
 
-    <!-- 📱 モバイルタブメニュー -->
     <nav class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('tab-summary', this)" data-i18n="tabSummary">📊 サマリー</button>
         <button class="tab-btn" onclick="switchTab('tab-input', this)" data-i18n="tabInput">📝 記録・設定</button>
@@ -424,14 +450,14 @@
     </nav>
 
     <div class="main-layout">
-        <!-- 1列 (PC) / タブ 1 (モバイル): サマリー & グラフ -->
+        <!-- サマリー & グラフ -->
         <div id="tab-summary" class="tab-content active">
             <div class="card">
                 <h2 id="sec1TitleHeader">1. リアルタイム状況【<span id="targetNameLabel">全資産（合計）</span>】</h2>
                 <div class="summary-grid">
                     <div class="summary-box">
                         <div class="label" data-i18n="lblDays">経過期間</div>
-                        <div class="value" id="summaryDays">0日</div>
+                        <div class="value" id="summaryDays">0 日</div>
                     </div>
                     <div class="summary-box">
                         <div class="label" data-i18n="lblPrincipal">累計投資元本</div>
@@ -456,21 +482,37 @@
             </div>
         </div>
 
-        <!-- 2列 (PC) / タブ 2 (モバイル): 記録 & 設定 -->
+        <!-- 記録 & 設定 -->
         <div id="tab-input" class="tab-content">
             <div class="card">
                 <h2 data-i18n="sec3Title">3. 評価額の記録・編集</h2>
                 <div class="form-group">
                     <label for="recordAssetSelect" data-i18n="lblTargetAsset">対象資産</label>
-                    <select id="recordAssetSelect"></select>
+                    <select id="recordAssetSelect" onchange="updateRecordCalcPreview()"></select>
                 </div>
                 <div class="form-group">
                     <label for="recordDate" data-i18n="lblRecordDate">記録日</label>
-                    <input type="date" id="recordDate">
+                    <input type="date" id="recordDate" onchange="updateRecordCalcPreview()">
                 </div>
+
+                <div class="calc-preview-box">
+                    <div class="calc-preview-item">
+                        <div class="p-label" data-i18n="lblCalcDays">記録日時点の経過期間</div>
+                        <div class="p-value" id="previewDays">0 日</div>
+                    </div>
+                    <div class="calc-preview-item">
+                        <div class="p-label" data-i18n="lblCalcPrincipal">記録日時点の累計元本</div>
+                        <div class="p-value" id="previewPrincipal">0 円</div>
+                    </div>
+                    <div class="calc-preview-item">
+                        <div class="p-label" data-i18n="lblCalcProfit">記録日時点の損益</div>
+                        <div class="p-value" id="previewProfit">0 円</div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="evalAmt" data-i18n="lblCurrentEval">現在の評価額 (円)</label>
-                    <input type="number" id="evalAmt" inputmode="numeric" placeholder="例: 320000" step="10000">
+                    <input type="number" id="evalAmt" inputmode="numeric" placeholder="例: 320000" step="10000" oninput="updateRecordCalcPreview()">
                 </div>
                 <button id="saveBtn" class="btn-primary" onclick="addRecord()" data-i18n="btnSaveRecord">記録を保存</button>
                 <button id="cancelBtn" onclick="cancelEdit()" style="display:none; background-color: #a0aec0; color: white; border:none; height: 38px; border-radius:8px; width:100%; margin-top:6px; font-weight:bold; cursor:pointer; font-size: 0.85rem;" data-i18n="btnCancel">キャンセル</button>
@@ -483,7 +525,7 @@
             </div>
         </div>
 
-        <!-- 3列 (PC) / タブ 3 (モバイル): 履歴 -->
+        <!-- 履歴 -->
         <div id="tab-history" class="tab-content">
             <div class="card">
                 <h2 data-i18n="sec5Title">5. 投資記録履歴</h2>
@@ -529,6 +571,9 @@
             lblTargetAsset: "対象資産",
             lblRecordDate: "記録日",
             lblCurrentEval: "現在の評価額 (円)",
+            lblCalcDays: "記録日時点の経過期間",
+            lblCalcPrincipal: "記録日時点の累計元本",
+            lblCalcProfit: "記録日時点の損益",
             btnSaveRecord: "記録を保存",
             btnUpdateRecord: "変更を更新",
             btnCancel: "キャンセル",
@@ -554,9 +599,9 @@
             lblStatus: "積立状態",
             statusActive: "🟢 積立中 (アクティブ)",
             statusPaused: "⏸️ 一時停止中",
-            lblPauseDate: "停止日/基準日",
+            lblPastStartDate: "過去の開始日",
+            lblStartOrResumeDate: "開始日/再開日",
             unitDays: "日",
-            unitMonths: "ヶ月",
             confirmDeleteAsset: "この資産ルールを削除しますか？",
             confirmDeleteRecord: "この記録を削除してもよろしいですか？",
             alertFillInput: "正しい資産、日付、および評価額を入力してください。"
@@ -580,6 +625,9 @@
             lblTargetAsset: "Asset",
             lblRecordDate: "Date",
             lblCurrentEval: "Current Value (JPY)",
+            lblCalcDays: "Elapsed Time as of Date",
+            lblCalcPrincipal: "Principal as of Date",
+            lblCalcProfit: "Profit/Loss as of Date",
             btnSaveRecord: "Save Record",
             btnUpdateRecord: "Update Record",
             btnCancel: "Cancel",
@@ -605,165 +653,12 @@
             lblStatus: "Status",
             statusActive: "🟢 Active",
             statusPaused: "⏸️ Paused",
-            lblPauseDate: "Paused Date",
+            lblPastStartDate: "Past Start Date",
+            lblStartOrResumeDate: "Start / Resume Date",
             unitDays: "days",
-            unitMonths: "mos",
             confirmDeleteAsset: "Are you sure you want to delete this asset rule?",
             confirmDeleteRecord: "Are you sure you want to delete this record?",
             alertFillInput: "Please enter a valid asset, date, and valuation amount."
-        },
-        ko: {
-            title: "📈 적립식 투자 自動 자산 관리",
-            viewFilterLabel: "🔍 표시 대상:",
-            allAssets: "전체 자산 (합계)",
-            categoryGroup: "[구분별 합계]",
-            assetGroup: "[개별 자산]",
-            tabSummary: "📊 요약",
-            tabInput: "📝 기록/설정",
-            tabHistory: "📜 내역",
-            sec1TitlePrefix: "1. 실시간 현황",
-            lblDays: "경과 기간",
-            lblPrincipal: "누적 투자 원금",
-            lblEval: "최신 평가액",
-            lblProfit: "평가 손익 (수익률)",
-            sec2Title: "2. 자산 성장 추이 그래프",
-            sec3Title: "3. 평가액 기록·수정",
-            lblTargetAsset: "대상 자산",
-            lblRecordDate: "기록일",
-            lblCurrentEval: "현재 평가액 (円)",
-            btnSaveRecord: "기록 저장",
-            btnUpdateRecord: "변경사항 업데이트",
-            btnCancel: "취소",
-            sec4Title: "4. 투자 규칙 설정 (현황 및 일시정지)",
-            btnAddAsset: "+ 자산 추가하기",
-            sec5Title: "5. 투자 기록 내역",
-            thAsset: "자산",
-            thDate: "날짜",
-            thPrincipal: "원금",
-            thEval: "평가액",
-            thProfit: "손익",
-            thRate: "수익률",
-            thAction: "관리",
-            chartPrincipal: "누적 원금",
-            chartEval: "평가액",
-            btnEdit: "수정",
-            btnDelete: "삭제",
-            lblCategory: "구분",
-            lblAssetName: "자산명",
-            lblDaily: "일(円)",
-            lblWeekly: "주(円)",
-            lblMonthly: "월(円)",
-            lblStatus: "적립 상태",
-            statusActive: "🟢 적립 중 (Active)",
-            statusPaused: "⏸️ 일시 정지",
-            lblPauseDate: "정지/기준일",
-            unitDays: "일",
-            unitMonths: "개월",
-            confirmDeleteAsset: "이 자산 규칙을 삭제하시겠습니까?",
-            confirmDeleteRecord: "이 기록을 삭제하시겠습니까?",
-            alertFillInput: "올바른 자산, 날짜 및 평가액을 입력해 주세요."
-        },
-        zh: {
-            title: "📈 定投自动资产管理系统",
-            viewFilterLabel: "🔍 显示对象:",
-            allAssets: "全部资产 (合计)",
-            categoryGroup: "【按分类合计】",
-            assetGroup: "【单项资产】",
-            tabSummary: "📊 概要",
-            tabInput: "📝 记录/设置",
-            tabHistory: "📜 历史记录",
-            sec1TitlePrefix: "1. 实时状况",
-            lblDays: "已用时间",
-            lblPrincipal: "累计投资本金",
-            lblEval: "最新评估额",
-            lblProfit: "评估损益 (收益率)",
-            sec2Title: "2. 资产增长趋势图",
-            sec3Title: "3. 记录·编辑评估额",
-            lblTargetAsset: "目标资产",
-            lblRecordDate: "记录日期",
-            lblCurrentEval: "当前评估额 (日元)",
-            btnSaveRecord: "保存记录",
-            btnUpdateRecord: "更新修改",
-            btnCancel: "取消",
-            sec4Title: "4. 投资规则设置 (状况/暂停设置)",
-            btnAddAsset: "+ 添加新资产",
-            sec5Title: "5. 投资记录历史",
-            thAsset: "资产",
-            thDate: "日期",
-            thPrincipal: "本金",
-            thEval: "评估额",
-            thProfit: "损益",
-            thRate: "收益率",
-            thAction: "操作",
-            chartPrincipal: "累计本金",
-            chartEval: "评估额",
-            btnEdit: "编辑",
-            btnDelete: "删除",
-            lblCategory: "区分",
-            lblAssetName: "资产名称",
-            lblDaily: "日(日元)",
-            lblWeekly: "周(日元)",
-            lblMonthly: "月(日元)",
-            lblStatus: "定投状态",
-            statusActive: "🟢 进行中",
-            statusPaused: "⏸️ 暂停定投",
-            lblPauseDate: "暂停/基准日期",
-            unitDays: "天",
-            unitMonths: "个月",
-            confirmDeleteAsset: "确定要删除此资产规则吗？",
-            confirmDeleteRecord: "确定要删除此记录吗？",
-            alertFillInput: "请输入有效的资产、日期和评估金额。"
-        },
-        es: {
-            title: "📈 Control de Activos Inversión DCA",
-            viewFilterLabel: "🔍 Mostrar:",
-            allAssets: "Todos los activos (Total)",
-            categoryGroup: "[Total por Categoría]",
-            assetGroup: "[Activo Individual]",
-            tabSummary: "📊 Resumen",
-            tabInput: "📝 Registro/Config",
-            tabHistory: "📜 Historial",
-            sec1TitlePrefix: "1. Estado en Tiempo Real",
-            lblDays: "Tiempo Transcurrido",
-            lblPrincipal: "Capital Total Invertido",
-            lblEval: "Valor Actual",
-            lblProfit: "Ganancia/Pérdida (%)",
-            sec2Title: "2. Gráfico de Crecimiento de Activos",
-            sec3Title: "3. Registrar/Editar Valoración",
-            lblTargetAsset: "Activo",
-            lblRecordDate: "Fecha de Registro",
-            lblCurrentEval: "Valor Actual (JPY)",
-            btnSaveRecord: "Guardar Registro",
-            btnUpdateRecord: "Actualizar Registro",
-            btnCancel: "Cancelar",
-            sec4Title: "4. Reglas de Inversión (Ajuste de Estado/Pausa)",
-            btnAddAsset: "+ Agregar Nuevo Activo",
-            sec5Title: "5. Historial de Registros",
-            thAsset: "Activo",
-            thDate: "Fecha",
-            thPrincipal: "Capital",
-            thEval: "Valor",
-            thProfit: "Ganancia/Pérdida",
-            thRate: "Tasa (%)",
-            thAction: "Acción",
-            chartPrincipal: "Capital Acumulado",
-            chartEval: "Valoración",
-            btnEdit: "Editar",
-            btnDelete: "Eliminar",
-            lblCategory: "Categoría",
-            lblAssetName: "Nombre del Activo",
-            lblDaily: "Diario",
-            lblWeekly: "Semanal",
-            lblMonthly: "Mensual",
-            lblStatus: "Estado",
-            statusActive: "🟢 Activo",
-            statusPaused: "⏸️ Pausado",
-            lblPauseDate: "Fecha de Pausa",
-            unitDays: "días",
-            unitMonths: "meses",
-            confirmDeleteAsset: "¿Está seguro de eliminar esta regla de activo?",
-            confirmDeleteRecord: "¿Está seguro de eliminar este registro?",
-            alertFillInput: "Por favor ingrese un activo, fecha y monto válidos."
         }
     };
 
@@ -772,15 +667,15 @@
     const STORAGE_RECORDS_KEY = 'dca_investment_records_v3';
 
     let assetRules = JSON.parse(localStorage.getItem(STORAGE_ASSETS_KEY)) || [
-        { id: 'asset_1', category: 'つみたてNISA', name: 'オルカン (S&P500)', startDate: '2026-01-01', daily: 0, weekly: 0, monthly: 50000, status: 'PAUSED', pauseDate: '2026-08-03', customDays: null, customPrincipal: null },
-        { id: 'asset_2', category: '暗号資産', name: 'ビットコイン / Crypto', startDate: '2026-01-01', daily: 1000, weekly: 0, monthly: 0, status: 'ACTIVE', pauseDate: '', customDays: null, customPrincipal: null }
+        { id: 'asset_1', category: 'つみたてNISA', name: 'オルカン (S&P500)', startDate: '2024-01-01', daily: 0, weekly: 0, monthly: 50000, status: 'PAUSED', pastStartDate: '2024-01-01', customDays: null, customPrincipal: null },
+        { id: 'asset_2', category: '暗号通貨', name: 'GMO BTC', startDate: '2026-08-03', daily: 1000, weekly: 0, monthly: 0, status: 'ACTIVE', pastStartDate: '2024-11-14', customDays: null, customPrincipal: 314500 }
     ];
 
     let records = JSON.parse(localStorage.getItem(STORAGE_RECORDS_KEY)) || [
-        { assetId: 'asset_1', date: '2026-01-01', evalAmt: 0 },
+        { assetId: 'asset_1', date: '2024-01-01', evalAmt: 0 },
         { assetId: 'asset_1', date: '2026-08-03', evalAmt: 155000 },
-        { assetId: 'asset_2', date: '2026-01-01', evalAmt: 0 },
-        { assetId: 'asset_2', date: '2026-08-03', evalAmt: 100000 }
+        { assetId: 'asset_2', date: '2024-11-14', evalAmt: 0 },
+        { assetId: 'asset_2', date: '2026-08-03', evalAmt: 555555 }
     ];
 
     let editingIndex = -1;
@@ -795,6 +690,7 @@
         updateAssetDropdowns();
         initChart();
         updateCalculations();
+        updateRecordCalcPreview();
         
         if (chartInstance) {
             setTimeout(() => chartInstance.resize(), 100);
@@ -814,10 +710,11 @@
         renderAssetRulesInputs();
         updateAssetDropdowns();
         updateCalculations();
+        updateRecordCalcPreview();
     }
 
     function applyLanguageUI() {
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (dict[key]) {
@@ -828,7 +725,7 @@
     }
 
     function updateHeaderTitleText() {
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
         const viewFilterSelect = document.getElementById('viewFilter');
         let selectedText = dict.allAssets;
 
@@ -858,40 +755,86 @@
         localStorage.setItem(STORAGE_ASSETS_KEY, JSON.stringify(assetRules));
         updateAssetDropdowns();
         updateCalculations();
+        updateRecordCalcPreview();
+    }
+
+    /* 経過日数の計算関数 */
+    function calculateDaysBetween(startDateStr, endDateStr) {
+        if (!startDateStr || !endDateStr) return 0;
+        const start = new Date(startDateStr + 'T00:00:00');
+        const end = new Date(endDateStr + 'T00:00:00');
+        return Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24)));
+    }
+
+    function calculatePrincipalForAsset(asset, targetDateStr) {
+        if (!asset) return 0;
+
+        const effectivePastStart = asset.pastStartDate;
+        const targetMs = targetDateStr ? new Date(targetDateStr + 'T00:00:00').getTime() : new Date().getTime();
+
+        if (effectivePastStart) {
+            const pastStartMs = new Date(effectivePastStart + 'T00:00:00').getTime();
+
+            if (targetMs < pastStartMs) {
+                return 0;
+            }
+
+            const hasRecordOnPastStart = records.some(r => r.assetId === asset.id && r.date === effectivePastStart);
+            if (targetMs === pastStartMs && hasRecordOnPastStart) {
+                return 0;
+            }
+        }
+
+        let basePrincipal = 0;
+        if (asset.customPrincipal !== null && asset.customPrincipal !== undefined && asset.customPrincipal !== '') {
+            basePrincipal = parseFloat(asset.customPrincipal) || 0;
+        }
+
+        const effectiveStartDate = asset.startDate || getTodayISO();
+        const start = new Date(effectiveStartDate + 'T00:00:00');
+        let end = targetDateStr ? new Date(targetDateStr + 'T00:00:00') : new Date();
+
+        if (end < start) return basePrincipal;
+
+        let accumulated = 0;
+        const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+
+        if (asset.daily > 0) {
+            accumulated += diffDays * asset.daily;
+        }
+        if (asset.weekly > 0) {
+            const diffWeeks = Math.floor(diffDays / 7);
+            accumulated += diffWeeks * asset.weekly;
+        }
+        if (asset.monthly > 0) {
+            let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+            if (end.getDate() < start.getDate()) {
+                months--;
+            }
+            months = Math.max(0, months);
+            accumulated += months * asset.monthly;
+        }
+
+        return basePrincipal + accumulated;
     }
 
     function renderAssetRulesInputs() {
         const container = document.getElementById('assetsConfigContainer');
-        const dict = i18n[currentLang];
-        const todayStr = getTodayISO();
+        const dict = i18n[currentLang] || i18n['ja'];
         container.innerHTML = '';
 
         assetRules.forEach((asset, idx) => {
             const isPaused = asset.status === 'PAUSED';
-            const evalDateTarget = isPaused && asset.pauseDate ? asset.pauseDate : todayStr;
             
-            // 経過日数
-            let diffDays;
-            if (asset.customDays !== null && asset.customDays !== undefined && asset.customDays !== '') {
-                diffDays = asset.customDays;
-            } else {
-                const start = new Date(asset.startDate + 'T00:00:00');
-                const end = new Date(evalDateTarget + 'T00:00:00');
-                diffDays = Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24)));
-            }
-
-            // 元本
-            let principal;
-            if (asset.customPrincipal !== null && asset.customPrincipal !== undefined && asset.customPrincipal !== '') {
-                principal = asset.customPrincipal;
-            } else {
-                principal = calculatePrincipalForAsset(asset, evalDateTarget);
-            }
-            
-            // 最新の評価額
             const latestRecord = records
                 .filter(r => r.assetId === asset.id)
                 .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            
+            const evalDateTarget = latestRecord ? latestRecord.date : getTodayISO();
+            
+            const baseStartDateStr = asset.pastStartDate || asset.startDate || getTodayISO();
+            const diffDays = calculateDaysBetween(baseStartDateStr, evalDateTarget);
+
             const evalAmt = latestRecord ? latestRecord.evalAmt : 0;
 
             const card = document.createElement('div');
@@ -907,15 +850,14 @@
                     ${assetRules.length > 1 ? `<button class="btn-remove-asset" onclick="removeAssetRule(${idx})">${dict.btnDelete}</button>` : ''}
                 </div>
 
-                <!-- ✏️ ミニサマリー領域 -->
                 <div class="asset-mini-summary">
                     <div class="mini-box">
                         <div class="m-label">${dict.lblDays}</div>
-                        <input type="number" value="${diffDays}" placeholder="日" onchange="updateAssetRuleField(${idx}, 'customDays', this.value !== '' ? parseFloat(this.value) : null)">
+                        <input type="number" value="${diffDays}" placeholder="日" readonly title="過去の開始日（未指定時は開始日/再開日）と記録日より自動計算されます">
                     </div>
                     <div class="mini-box">
                         <div class="m-label">${dict.lblPrincipal}</div>
-                        <input type="number" value="${principal}" placeholder="円" onchange="updateAssetRuleField(${idx}, 'customPrincipal', this.value !== '' ? parseFloat(this.value) : null)">
+                        <input type="number" value="${asset.customPrincipal ?? ''}" placeholder="円" onchange="updateAssetRuleField(${idx}, 'customPrincipal', this.value !== '' ? parseFloat(this.value) : null)">
                     </div>
                     <div class="mini-box">
                         <div class="m-label">${dict.lblEval}</div>
@@ -943,14 +885,14 @@
                         </select>
                     </div>
                     <div>
-                        <label>${dict.lblPauseDate}</label>
-                        <input type="date" value="${asset.pauseDate || ''}" ${!isPaused ? 'disabled' : ''} onchange="updateAssetRuleField(${idx}, 'pauseDate', this.value)">
+                        <label>${dict.lblPastStartDate}</label>
+                        <input type="date" value="${asset.pastStartDate || ''}" onchange="updateAssetRuleField(${idx}, 'pastStartDate', this.value)">
                     </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px;">
                     <div>
-                        <label>${dict.thDate}</label>
+                        <label>${dict.lblStartOrResumeDate}</label>
                         <input type="date" value="${asset.startDate || ''}" onchange="updateAssetRuleField(${idx}, 'startDate', this.value)">
                     </div>
                     <div>
@@ -992,6 +934,7 @@
 
         saveRecords();
         updateCalculations();
+        updateRecordCalcPreview();
     }
 
     function addNewAssetRule() {
@@ -1005,7 +948,7 @@
             weekly: 0,
             monthly: 10000,
             status: 'ACTIVE',
-            pauseDate: '',
+            pastStartDate: '',
             customDays: null,
             customPrincipal: null
         });
@@ -1018,7 +961,7 @@
     }
 
     function removeAssetRule(index) {
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
         if (confirm(dict.confirmDeleteAsset)) {
             const assetId = assetRules[index].id;
             assetRules.splice(index, 1);
@@ -1032,7 +975,7 @@
     function updateAssetDropdowns() {
         const filterSelect = document.getElementById('viewFilter');
         const recordSelect = document.getElementById('recordAssetSelect');
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
 
         const currentFilterVal = filterSelect.value;
         const currentRecordVal = recordSelect.value;
@@ -1078,47 +1021,46 @@
         updateHeaderTitleText();
     }
 
-    function calculatePrincipalForAsset(asset, targetDateStr) {
-        if (asset.customPrincipal !== null && asset.customPrincipal !== undefined && asset.customPrincipal !== '') {
-            return asset.customPrincipal;
+    function updateRecordCalcPreview() {
+        const assetId = document.getElementById('recordAssetSelect').value;
+        const dateStr = document.getElementById('recordDate').value;
+        const evalAmt = parseFloat(document.getElementById('evalAmt').value) || 0;
+        const dict = i18n[currentLang] || i18n['ja'];
+
+        const previewDaysEl = document.getElementById('previewDays');
+        const previewPrincipalEl = document.getElementById('previewPrincipal');
+        const previewProfitEl = document.getElementById('previewProfit');
+
+        if (!assetId || !dateStr) {
+            previewDaysEl.innerText = "0 " + dict.unitDays;
+            previewPrincipalEl.innerText = "0 円";
+            previewProfitEl.innerText = "0 円";
+            return;
         }
 
-        const start = new Date(asset.startDate + 'T00:00:00');
-        let end = new Date(targetDateStr + 'T00:00:00');
+        const asset = assetRules.find(a => a.id === assetId);
+        const baseStartDateStr = asset ? (asset.pastStartDate || asset.startDate) : getTodayISO();
+        
+        const diffDays = calculateDaysBetween(baseStartDateStr, dateStr);
+        const principal = calculatePrincipalForAsset(asset, dateStr);
+        const profit = evalAmt - principal;
+        const profitRate = principal > 0 ? ((profit / principal) * 100).toFixed(2) : "0.00";
+        const sign = profit > 0 ? "+" : "";
 
-        if (asset.status === 'PAUSED' && asset.pauseDate) {
-            const pauseD = new Date(asset.pauseDate + 'T00:00:00');
-            if (pauseD < end) end = pauseD;
+        previewDaysEl.innerText = `${diffDays} ${dict.unitDays}`;
+        previewPrincipalEl.innerText = `${principal.toLocaleString()} 円`;
+        if (document.getElementById('evalAmt').value !== '') {
+            previewProfitEl.innerText = `${sign}${profit.toLocaleString()} 円 (${sign}${profitRate}%)`;
+            previewProfitEl.className = `p-value ${profit >= 0 ? 'positive' : 'negative'}`;
+        } else {
+            previewProfitEl.innerText = "- 円";
+            previewProfitEl.className = "p-value";
         }
-
-        if (end < start) return 0;
-
-        let total = 0;
-        const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
-
-        if (asset.daily > 0) {
-            total += diffDays * asset.daily;
-        }
-        if (asset.weekly > 0) {
-            const diffWeeks = Math.floor(diffDays / 7);
-            total += diffWeeks * asset.weekly;
-        }
-        if (asset.monthly > 0) {
-            let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-            if (end.getDate() < start.getDate()) {
-                months--;
-            }
-            months = Math.max(0, months);
-            total += months * asset.monthly;
-        }
-
-        return total;
     }
 
     function updateCalculations() {
         const filterVal = document.getElementById('viewFilter').value;
-        const dict = i18n[currentLang];
-        const todayStr = getTodayISO();
+        const dict = i18n[currentLang] || i18n['ja'];
 
         updateHeaderTitleText();
 
@@ -1135,31 +1077,37 @@
         let totalPrincipal = 0;
         let totalEval = 0;
 
+        let minStartDateMs = null;
+        let maxRecordDateMs = null;
+
         filteredAssets.forEach(a => {
-            const evalDateTarget = (a.status === 'PAUSED' && a.pauseDate) ? a.pauseDate : todayStr;
-            totalPrincipal += calculatePrincipalForAsset(a, evalDateTarget);
+            const baseStartDateStr = a.pastStartDate || a.startDate || getTodayISO();
+            const startMs = new Date(baseStartDateStr + 'T00:00:00').getTime();
+            if (minStartDateMs === null || startMs < minStartDateMs) {
+                minStartDateMs = startMs;
+            }
 
             const latestRec = records
                 .filter(r => r.assetId === a.id)
                 .sort((x, y) => new Date(y.date) - new Date(x.date))[0];
+
+            let targetDateStr = latestRec ? latestRec.date : baseStartDateStr;
+            let targetMs = new Date(targetDateStr + 'T00:00:00').getTime();
+
+            if (maxRecordDateMs === null || targetMs > maxRecordDateMs) {
+                maxRecordDateMs = targetMs;
+            }
+
+            totalPrincipal += calculatePrincipalForAsset(a, targetDateStr);
             if (latestRec) {
                 totalEval += latestRec.evalAmt;
             }
         });
 
-        // 経過日数計算（最古の開始日基準）
         let daysStr = "0 " + dict.unitDays;
-        if (filteredAssets.length > 0) {
-            if (filteredAssets.length === 1 && filteredAssets[0].customDays !== null && filteredAssets[0].customDays !== undefined && filteredAssets[0].customDays !== '') {
-                daysStr = `${filteredAssets[0].customDays} ${dict.unitDays}`;
-            } else {
-                const startDates = filteredAssets.map(a => new Date(a.startDate + 'T00:00:00'));
-                const minStart = new Date(Math.min(...startDates));
-                const end = new Date(todayStr + 'T00:00:00');
-                const diffDays = Math.max(0, Math.floor((end - minStart) / (1000 * 60 * 60 * 24)));
-                const diffMonths = (diffDays / 30.4375).toFixed(1);
-                daysStr = `${diffDays} ${dict.unitDays} (${diffMonths} ${dict.unitMonths})`;
-            }
+        if (minStartDateMs !== null && maxRecordDateMs !== null) {
+            const diffDays = Math.max(0, Math.floor((maxRecordDateMs - minStartDateMs) / (1000 * 60 * 60 * 24)));
+            daysStr = `${diffDays} ${dict.unitDays}`;
         }
 
         const profit = totalEval - totalPrincipal;
@@ -1182,7 +1130,7 @@
         const assetId = document.getElementById('recordAssetSelect').value;
         const date = document.getElementById('recordDate').value;
         const evalAmt = parseFloat(document.getElementById('evalAmt').value);
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
 
         if (!assetId || !date || isNaN(evalAmt)) {
             alert(dict.alertFillInput);
@@ -1207,10 +1155,11 @@
         document.getElementById('evalAmt').value = '';
         renderAssetRulesInputs();
         updateCalculations();
+        updateRecordCalcPreview();
     }
 
     function editRecord(index) {
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
         const rec = records[index];
         editingIndex = index;
 
@@ -1221,6 +1170,8 @@
         document.getElementById('saveBtn').innerText = dict.btnUpdateRecord;
         document.getElementById('cancelBtn').style.display = 'block';
 
+        updateRecordCalcPreview();
+
         if (window.innerWidth < 1024) {
             const inputTabBtn = document.querySelectorAll('.tab-btn')[1];
             switchTab('tab-input', inputTabBtn);
@@ -1228,20 +1179,22 @@
     }
 
     function cancelEdit() {
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
         editingIndex = -1;
         document.getElementById('evalAmt').value = '';
         document.getElementById('saveBtn').innerText = dict.btnSaveRecord;
         document.getElementById('cancelBtn').style.display = 'none';
+        updateRecordCalcPreview();
     }
 
     function deleteRecord(index) {
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
         if (confirm(dict.confirmDeleteRecord)) {
             records.splice(index, 1);
             saveRecords();
             renderAssetRulesInputs();
             updateCalculations();
+            updateRecordCalcPreview();
         }
     }
 
@@ -1251,7 +1204,7 @@
 
     function renderHistoryTable() {
         const tbody = document.getElementById('historyTableBody');
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
         tbody.innerHTML = '';
 
         const filterVal = document.getElementById('viewFilter').value;
@@ -1273,6 +1226,7 @@
 
         sortedRecords.forEach(r => {
             const asset = assetRules.find(a => a.id === r.assetId) || { name: '不明', category: '' };
+            
             const principal = calculatePrincipalForAsset(asset, r.date);
             const profit = r.evalAmt - principal;
             const rate = principal > 0 ? ((profit / principal) * 100).toFixed(2) : "0.00";
@@ -1302,7 +1256,7 @@
 
     function initChart() {
         const ctx = document.getElementById('growthChart').getContext('2d');
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
 
         chartInstance = new Chart(ctx, {
             type: 'line',
@@ -1351,22 +1305,26 @@
         });
     }
 
+    /* 【修正点】グラフの最初の地点に必ず 0 円のスタートポイントを設ける処理 */
     function updateChart(filteredAssets) {
         if (!chartInstance) return;
 
-        const dict = i18n[currentLang];
+        const dict = i18n[currentLang] || i18n['ja'];
         const assetIds = filteredAssets.map(a => a.id);
 
         const relevantRecords = records.filter(r => assetIds.includes(r.assetId));
         const datesSet = new Set(relevantRecords.map(r => r.date));
 
+        let earliestStartStr = null;
+
         filteredAssets.forEach(a => {
-            datesSet.add(a.startDate);
-            if (a.status === 'PAUSED' && a.pauseDate) {
-                datesSet.add(a.pauseDate);
+            const baseStart = a.pastStartDate || a.startDate || getTodayISO();
+            datesSet.add(baseStart);
+
+            if (!earliestStartStr || new Date(baseStart) < new Date(earliestStartStr)) {
+                earliestStartStr = baseStart;
             }
         });
-        datesSet.add(getTodayISO());
 
         const sortedDates = Array.from(datesSet).sort((a, b) => new Date(a) - new Date(b));
 
@@ -1376,6 +1334,13 @@
         sortedDates.forEach(dateStr => {
             let sumP = 0;
             let sumE = 0;
+
+            // 開始日(スタート時点)は必ず0円からスタートするように調整
+            if (dateStr === earliestStartStr) {
+                principalData.push(0);
+                evalData.push(0);
+                return;
+            }
 
             filteredAssets.forEach(a => {
                 sumP += calculatePrincipalForAsset(a, dateStr);
