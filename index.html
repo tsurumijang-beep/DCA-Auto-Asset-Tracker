@@ -7,6 +7,11 @@
     <title>マルチ資産 積立資産管理システム</title>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDK (v9/v10 Compat Library for easy script tag usage) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -551,6 +556,20 @@
 </div>
 
 <script>
+    // --- Firebase Initialization ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyAsy-Jp89VE-UQ7s7bHZPWMJQvMZllMENk",
+        authDomain: "tumitatesisannkannri.firebaseapp.com",
+        projectId: "tumitatesisannkannri",
+        storageBucket: "tumitatesisannkannri.firebasestorage.app",
+        messagingSenderId: "1033915837782",
+        appId: "1:1033915837782:web:abb3626b35b7cb9ba5baf7",
+        measurementId: "G-Y90H2MH2BM"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     const i18n = {
         ja: {
             title: "📈 積立資産管理システム",
@@ -663,15 +682,14 @@
     };
 
     let currentLang = localStorage.getItem('dca_app_lang') || 'ja';
-    const STORAGE_ASSETS_KEY = 'dca_assets_config_v6';
-    const STORAGE_RECORDS_KEY = 'dca_investment_records_v3';
 
-    let assetRules = JSON.parse(localStorage.getItem(STORAGE_ASSETS_KEY)) || [
+    // 初期デフォルト値
+    let assetRules = [
         { id: 'asset_1', category: 'つみたてNISA', name: 'オルカン (S&P500)', startDate: '2024-01-01', daily: 0, weekly: 0, monthly: 50000, status: 'PAUSED', pastStartDate: '2024-01-01', customDays: null, customPrincipal: null },
         { id: 'asset_2', category: '暗号通貨', name: 'GMO BTC', startDate: '2026-08-03', daily: 1000, weekly: 0, monthly: 0, status: 'ACTIVE', pastStartDate: '2024-11-14', customDays: null, customPrincipal: 314500 }
     ];
 
-    let records = JSON.parse(localStorage.getItem(STORAGE_RECORDS_KEY)) || [
+    let records = [
         { assetId: 'asset_1', date: '2024-01-01', evalAmt: 0 },
         { assetId: 'asset_1', date: '2026-08-03', evalAmt: 155000 },
         { assetId: 'asset_2', date: '2024-11-14', evalAmt: 0 },
@@ -686,15 +704,10 @@
         document.getElementById('recordDate').valueAsDate = new Date();
         
         applyLanguageUI();
-        renderAssetRulesInputs();
-        updateAssetDropdowns();
         initChart();
-        updateCalculations();
-        updateRecordCalcPreview();
-        
-        if (chartInstance) {
-            setTimeout(() => chartInstance.resize(), 100);
-        }
+
+        // Firebase Firestore Realtime Sync
+        loadFromFirebase();
     });
 
     window.addEventListener('resize', () => {
@@ -702,6 +715,36 @@
             chartInstance.resize();
         }
     });
+
+    // --- Firebase Sync Functions ---
+    function loadFromFirebase() {
+        db.collection("app_data").doc("main").onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.assetRules) assetRules = data.assetRules;
+                if (data.records) records = data.records;
+            } else {
+                // 初回ドキュメント作成
+                saveToFirebase();
+            }
+            renderAssetRulesInputs();
+            updateAssetDropdowns();
+            updateCalculations();
+            updateRecordCalcPreview();
+        }, (error) => {
+            console.error("Firestore read error: ", error);
+        });
+    }
+
+    function saveToFirebase() {
+        db.collection("app_data").doc("main").set({
+            assetRules: assetRules,
+            records: records,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch((error) => {
+            console.error("Firestore write error: ", error);
+        });
+    }
 
     function changeLanguage(lang) {
         currentLang = lang;
@@ -752,13 +795,9 @@
     }
 
     function saveAssetRules() {
-        localStorage.setItem(STORAGE_ASSETS_KEY, JSON.stringify(assetRules));
-        updateAssetDropdowns();
-        updateCalculations();
-        updateRecordCalcPreview();
+        saveToFirebase();
     }
 
-    /* 経過日数の計算関数 */
     function calculateDaysBetween(startDateStr, endDateStr) {
         if (!startDateStr || !endDateStr) return 0;
         const start = new Date(startDateStr + 'T00:00:00');
@@ -916,7 +955,6 @@
     function updateAssetRuleField(index, field, value) {
         assetRules[index][field] = value;
         saveAssetRules();
-        renderAssetRulesInputs();
     }
 
     function updateAssetEvalDirectly(assetId, valueStr) {
@@ -933,8 +971,6 @@
         }
 
         saveRecords();
-        updateCalculations();
-        updateRecordCalcPreview();
     }
 
     function addNewAssetRule() {
@@ -955,9 +991,7 @@
         
         records.push({ assetId: newId, date: getTodayISO(), evalAmt: 0 });
 
-        saveRecords();
-        saveAssetRules();
-        renderAssetRulesInputs();
+        saveToFirebase();
     }
 
     function removeAssetRule(index) {
@@ -966,9 +1000,7 @@
             const assetId = assetRules[index].id;
             assetRules.splice(index, 1);
             records = records.filter(r => r.assetId !== assetId);
-            saveRecords();
-            saveAssetRules();
-            renderAssetRulesInputs();
+            saveToFirebase();
         }
     }
 
@@ -1153,9 +1185,6 @@
 
         saveRecords();
         document.getElementById('evalAmt').value = '';
-        renderAssetRulesInputs();
-        updateCalculations();
-        updateRecordCalcPreview();
     }
 
     function editRecord(index) {
@@ -1192,14 +1221,11 @@
         if (confirm(dict.confirmDeleteRecord)) {
             records.splice(index, 1);
             saveRecords();
-            renderAssetRulesInputs();
-            updateCalculations();
-            updateRecordCalcPreview();
         }
     }
 
     function saveRecords() {
-        localStorage.setItem(STORAGE_RECORDS_KEY, JSON.stringify(records));
+        saveToFirebase();
     }
 
     function renderHistoryTable() {
@@ -1305,7 +1331,6 @@
         });
     }
 
-    /* 【修正点】グラフの最初の地点に必ず 0 円のスタートポイントを設ける処理 */
     function updateChart(filteredAssets) {
         if (!chartInstance) return;
 
@@ -1315,15 +1340,9 @@
         const relevantRecords = records.filter(r => assetIds.includes(r.assetId));
         const datesSet = new Set(relevantRecords.map(r => r.date));
 
-        let earliestStartStr = null;
-
         filteredAssets.forEach(a => {
             const baseStart = a.pastStartDate || a.startDate || getTodayISO();
             datesSet.add(baseStart);
-
-            if (!earliestStartStr || new Date(baseStart) < new Date(earliestStartStr)) {
-                earliestStartStr = baseStart;
-            }
         });
 
         const sortedDates = Array.from(datesSet).sort((a, b) => new Date(a) - new Date(b));
@@ -1334,13 +1353,6 @@
         sortedDates.forEach(dateStr => {
             let sumP = 0;
             let sumE = 0;
-
-            // 開始日(スタート時点)は必ず0円からスタートするように調整
-            if (dateStr === earliestStartStr) {
-                principalData.push(0);
-                evalData.push(0);
-                return;
-            }
 
             filteredAssets.forEach(a => {
                 sumP += calculatePrincipalForAsset(a, dateStr);
