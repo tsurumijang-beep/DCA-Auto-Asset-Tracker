@@ -217,7 +217,7 @@
             margin-top: 2px;
         }
 
-        /* 選択された資産の詳細カードコンテナ（1行2列グリッド対応） */
+        /* 選択された資産の詳細カードコンテナ */
         .selected-assets-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -229,7 +229,6 @@
             grid-template-columns: 1fr;
         }
 
-        /* 選択された資産の詳細カード */
         .selected-asset-detail-card {
             background: #fff5f5;
             border: 1.5px solid #3182ce;
@@ -416,6 +415,7 @@
             font-size: clamp(0.8rem, 2.6vw, 0.9rem);
             font-weight: bold;
             cursor: pointer;
+            margin-top: 8px;
         }
 
         .summary-grid {
@@ -647,7 +647,6 @@
                 <div class="chart-container">
                     <canvas id="growthChart"></canvas>
                 </div>
-                <!-- 1行に2資産が表示されるレスポンシブグリッドコンテナ -->
                 <div id="selectedAssetDetailContainer" class="selected-assets-grid"></div>
             </div>
         </div>
@@ -684,6 +683,13 @@
                     <label for="evalAmt" data-i18n="lblCurrentEval">現在の評価額 (円)</label>
                     <input type="number" id="evalAmt" inputmode="numeric" placeholder="例: 320000" step="10000" oninput="updateRecordCalcPreview()">
                 </div>
+
+                <!-- 今回の追加投資額（スポット投資）の入力欄 -->
+                <div class="form-group">
+                    <label for="addAmt" data-i18n="lblAddAmt">今回の追加投資額 (円)</label>
+                    <input type="number" id="addAmt" inputmode="numeric" placeholder="例: 50000" step="1000" oninput="updateRecordCalcPreview()">
+                </div>
+
                 <button id="saveBtn" class="btn-primary" onclick="addRecord()" data-i18n="btnSaveRecord">記録を保存</button>
                 <button id="cancelBtn" onclick="cancelEdit()" style="display:none; background-color: #a0aec0; color: white; border:none; height: 38px; border-radius:8px; width:100%; margin-top:6px; font-weight:bold; cursor:pointer; font-size: 0.85rem;" data-i18n="btnCancel">キャンセル</button>
             </div>
@@ -755,6 +761,7 @@
             lblTargetAsset: "対象資産",
             lblRecordDate: "記録日",
             lblCurrentEval: "現在の評価額 (円)",
+            lblAddAmt: "今回の追加投資額 (円)",
             lblCalcDays: "記録日時点の経過期間",
             lblCalcPrincipal: "記録日時点の累計元本",
             lblCalcProfit: "記録日時点の損益",
@@ -809,6 +816,7 @@
             lblTargetAsset: "Asset",
             lblRecordDate: "Date",
             lblCurrentEval: "Current Value (JPY)",
+            lblAddAmt: "Additional Investment (JPY)",
             lblCalcDays: "Elapsed Time as of Date",
             lblCalcPrincipal: "Principal as of Date",
             lblCalcProfit: "Profit/Loss as of Date",
@@ -852,10 +860,10 @@
         { id: 'asset_2', category: '暗号通貨', name: 'GMO BTC', startDate: '2026-08-03', daily: 1000, weekly: 0, monthly: 0, status: 'ACTIVE', pastStartDate: '2024-11-14', customDays: null, customPrincipal: 314500 }
     ];
     let records = [
-        { assetId: 'asset_1', date: '2024-01-01', evalAmt: 0 },
-        { assetId: 'asset_1', date: '2026-08-03', evalAmt: 155000 },
-        { assetId: 'asset_2', date: '2024-11-14', evalAmt: 0 },
-        { assetId: 'asset_2', date: '2026-08-03', evalAmt: 555555 }
+        { assetId: 'asset_1', date: '2024-01-01', evalAmt: 0, addAmt: 0 },
+        { assetId: 'asset_1', date: '2026-08-03', evalAmt: 155000, addAmt: 0 },
+        { assetId: 'asset_2', date: '2024-11-14', evalAmt: 0, addAmt: 0 },
+        { assetId: 'asset_2', date: '2026-08-03', evalAmt: 555555, addAmt: 0 }
     ];
     let editingIndex = -1;
     let chartInstance = null;
@@ -963,6 +971,7 @@
         return Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24)));
     }
 
+    // targetDateStr 時点までの「定期積立元本 ＋ 過去の累計追加投資額」を計算
     function calculatePrincipalForAsset(asset, targetDateStr) {
         if (!asset) return 0;
 
@@ -991,28 +1000,38 @@
         const start = new Date(effectiveStartDate + 'T00:00:00');
         let end = targetDateStr ? new Date(targetDateStr + 'T00:00:00') : new Date();
 
-        if (end < start) return basePrincipal;
-
         let accumulated = 0;
-        const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+        if (end >= start) {
+            const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
 
-        if (asset.daily > 0) {
-            accumulated += diffDays * asset.daily;
-        }
-        if (asset.weekly > 0) {
-            const diffWeeks = Math.floor(diffDays / 7);
-            accumulated += diffWeeks * asset.weekly;
-        }
-        if (asset.monthly > 0) {
-            let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-            if (end.getDate() < start.getDate()) {
-                months--;
+            if (asset.daily > 0) {
+                accumulated += diffDays * asset.daily;
             }
-            months = Math.max(0, months);
-            accumulated += months * asset.monthly;
+            if (asset.weekly > 0) {
+                const diffWeeks = Math.floor(diffDays / 7);
+                accumulated += diffWeeks * asset.weekly;
+            }
+            if (asset.monthly > 0) {
+                let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+                if (end.getDate() < start.getDate()) {
+                    months--;
+                }
+                months = Math.max(0, months);
+                accumulated += months * asset.monthly;
+            }
         }
 
-        return basePrincipal + accumulated;
+        // 対象日までのスポット追加投資額(addAmt)を全合計して元本にプラス
+        let additionalSum = 0;
+        if (targetDateStr) {
+            records.forEach(r => {
+                if (r.assetId === asset.id && r.date <= targetDateStr) {
+                    additionalSum += (parseFloat(r.addAmt) || 0);
+                }
+            });
+        }
+
+        return basePrincipal + accumulated + additionalSum;
     }
 
     function renderAssetRulesInputs() {
@@ -1123,7 +1142,7 @@
         if (existingIdx >= 0) {
             records[existingIdx].evalAmt = val;
         } else {
-            records.push({ assetId: assetId, date: todayStr, evalAmt: val });
+            records.push({ assetId: assetId, date: todayStr, evalAmt: val, addAmt: 0 });
         }
 
         saveRecords();
@@ -1145,7 +1164,7 @@
             customPrincipal: null
         });
 
-        records.push({ assetId: newId, date: getTodayISO(), evalAmt: 0 });
+        records.push({ assetId: newId, date: getTodayISO(), evalAmt: 0, addAmt: 0 });
         saveToFirebase();
     }
 
@@ -1208,10 +1227,12 @@
         updateHeaderTitleText();
     }
 
+    // 記録入力時のプレビュー計算（追加投資額も反映）
     function updateRecordCalcPreview() {
         const assetId = document.getElementById('recordAssetSelect').value;
         const dateStr = document.getElementById('recordDate').value;
         const evalAmt = parseFloat(document.getElementById('evalAmt').value) || 0;
+        const addAmt = parseFloat(document.getElementById('addAmt').value) || 0;
         const dict = i18n[currentLang] || i18n['ja'];
 
         const previewDaysEl = document.getElementById('previewDays');
@@ -1229,7 +1250,21 @@
         const baseStartDateStr = asset ? (asset.pastStartDate || asset.startDate) : getTodayISO();
 
         const diffDays = calculateDaysBetween(baseStartDateStr, dateStr);
-        const principal = calculatePrincipalForAsset(asset, dateStr);
+
+        // 基本元本 ＋ 今回入力された追加投資額
+        let principal = calculatePrincipalForAsset(asset, dateStr);
+
+        // 編集対象の既存レコードに含まれるaddAmtとの重複加算を避ける調整
+        if (editingIndex >= 0 && records[editingIndex].assetId === assetId && records[editingIndex].date === dateStr) {
+            principal -= (parseFloat(records[editingIndex].addAmt) || 0);
+        } else {
+            const existing = records.find(r => r.assetId === assetId && r.date === dateStr);
+            if (existing) {
+                principal -= (parseFloat(existing.addAmt) || 0);
+            }
+        }
+        principal += addAmt;
+
         const profit = evalAmt - principal;
         const profitRate = principal > 0 ? ((profit / principal) * 100).toFixed(2) : "0.00";
         const sign = profit > 0 ? "+" : "";
@@ -1318,7 +1353,6 @@
         const container = document.getElementById('selectedAssetDetailContainer');
         container.innerHTML = '';
 
-        // 단일 자産 선택 시와 복수 자産 선택 시 레이아웃 제어
         if (filteredAssets.length === 1) {
             container.classList.add('single-mode');
         } else {
@@ -1370,6 +1404,7 @@
         const assetId = document.getElementById('recordAssetSelect').value;
         const date = document.getElementById('recordDate').value;
         const evalAmt = parseFloat(document.getElementById('evalAmt').value);
+        const addAmt = parseFloat(document.getElementById('addAmt').value) || 0;
         const dict = i18n[currentLang] || i18n['ja'];
 
         if (!assetId || !date || isNaN(evalAmt)) {
@@ -1378,7 +1413,7 @@
         }
 
         if (editingIndex >= 0) {
-            records[editingIndex] = { assetId, date, evalAmt };
+            records[editingIndex] = { assetId, date, evalAmt, addAmt };
             editingIndex = -1;
             document.getElementById('saveBtn').innerText = dict.btnSaveRecord;
             document.getElementById('cancelBtn').style.display = 'none';
@@ -1386,13 +1421,15 @@
             const existingIdx = records.findIndex(r => r.assetId === assetId && r.date === date);
             if (existingIdx >= 0) {
                 records[existingIdx].evalAmt = evalAmt;
+                records[existingIdx].addAmt = addAmt;
             } else {
-                records.push({ assetId, date, evalAmt });
+                records.push({ assetId, date, evalAmt, addAmt });
             }
         }
 
         saveRecords();
         document.getElementById('evalAmt').value = '';
+        document.getElementById('addAmt').value = '';
     }
 
     function editRecord(index) {
@@ -1403,6 +1440,7 @@
         document.getElementById('recordAssetSelect').value = rec.assetId;
         document.getElementById('recordDate').value = rec.date;
         document.getElementById('evalAmt').value = rec.evalAmt;
+        document.getElementById('addAmt').value = rec.addAmt || '';
 
         document.getElementById('saveBtn').innerText = dict.btnUpdateRecord;
         document.getElementById('cancelBtn').style.display = 'block';
@@ -1419,6 +1457,7 @@
         const dict = i18n[currentLang] || i18n['ja'];
         editingIndex = -1;
         document.getElementById('evalAmt').value = '';
+        document.getElementById('addAmt').value = '';
         document.getElementById('saveBtn').innerText = dict.btnSaveRecord;
         document.getElementById('cancelBtn').style.display = 'none';
         updateRecordCalcPreview();
