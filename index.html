@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -7,11 +6,9 @@
     <title>マルチ資産 積立資産管理システム</title>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <!-- Firebase SDK (v9/v10 Compat Library for easy script tag usage) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -22,10 +19,12 @@
             --danger-color: #e74c3c;
             --border-color: #e2e8f0;
         }
+
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg-color);
@@ -35,10 +34,12 @@
             padding-bottom: 20px;
             min-height: 100vh;
         }
+
         .dashboard-container {
             max-width: 1600px;
             margin: 0 auto;
         }
+
         header {
             display: flex;
             align-items: center;
@@ -47,12 +48,14 @@
             gap: 8px;
             flex-wrap: wrap;
         }
+
         h1 {
             font-size: clamp(0.9rem, 3.5vw, 1.2rem);
             color: #1a365d;
             margin: 0;
             white-space: nowrap;
         }
+
         .header-controls {
             display: flex;
             align-items: center;
@@ -60,7 +63,9 @@
             margin-left: auto;
             max-width: 100%;
         }
-        .filter-header-container, .lang-select-container {
+
+        .filter-header-container,
+        .lang-select-container {
             display: flex;
             align-items: center;
             gap: 4px;
@@ -71,13 +76,17 @@
             border: 1px solid var(--border-color);
             max-width: 100%;
         }
-        .filter-header-container label, .lang-select-container label {
+
+        .filter-header-container label,
+        .lang-select-container label {
             font-size: clamp(0.68rem, 2.2vw, 0.85rem);
             font-weight: bold;
             color: #2b6cb0;
             white-space: nowrap;
         }
-        .filter-header-container select, .lang-select-container select {
+
+        .filter-header-container select,
+        .lang-select-container select {
             font-size: clamp(0.68rem, 2.2vw, 0.85rem);
             font-weight: bold;
             padding: 3px clamp(4px, 1vw, 8px);
@@ -100,6 +109,7 @@
             top: 0;
             z-index: 100;
         }
+
         .tab-btn {
             flex: 1;
             padding: 8px 0;
@@ -113,10 +123,11 @@
             text-align: center;
             transition: all 0.2s ease;
         }
+
         .tab-btn.active {
             background: #ffffff;
             color: #2b6cb0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         /* レイアウト */
@@ -125,22 +136,26 @@
             flex-direction: column;
             gap: 12px;
         }
+
         .tab-content {
             display: none;
             flex-direction: column;
             gap: 12px;
         }
+
         .tab-content.active {
             display: flex;
         }
+
         .card {
             background-color: var(--card-bg);
             padding: clamp(10px, 2.5vw, 14px);
             border-radius: 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
             display: flex;
             flex-direction: column;
         }
+
         .card h2 {
             font-size: clamp(0.82rem, 2.8vw, 0.95rem);
             margin: 0 0 10px 0;
@@ -148,9 +163,11 @@
             border-bottom: 2px solid #edf2f7;
             padding-bottom: 6px;
         }
+
         .form-group {
             margin-bottom: 8px;
         }
+
         label {
             display: block;
             font-size: clamp(0.7rem, 2.2vw, 0.8rem);
@@ -158,7 +175,11 @@
             margin-bottom: 4px;
             color: #4a5568;
         }
-        input[type="text"], input[type="date"], input[type="number"], select {
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        select {
             width: 100%;
             height: 38px;
             padding: 6px 8px;
@@ -178,19 +199,82 @@
             margin-bottom: 10px;
             border: 1px solid #cbd5e0;
         }
+
         .calc-preview-item {
             text-align: center;
         }
+
         .calc-preview-item .p-label {
             font-size: clamp(0.6rem, 1.8vw, 0.7rem);
             color: #4a5568;
             font-weight: bold;
         }
+
         .calc-preview-item .p-value {
             font-size: clamp(0.75rem, 2.4vw, 0.88rem);
             font-weight: bold;
             color: #2b6cb0;
             margin-top: 2px;
+        }
+
+        /* 選択された資産の詳細カード（グラフ下部に配置） */
+        .selected-asset-detail-card {
+            background: #fff5f5;
+            border: 2px solid #3182ce;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .selected-asset-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .selected-asset-name {
+            font-weight: bold;
+            font-size: clamp(0.85rem, 2.8vw, 0.95rem);
+            color: #2d3748;
+        }
+
+        .selected-asset-days-badge {
+            background: #1a202c;
+            color: #ffffff;
+            font-size: clamp(0.7rem, 2.2vw, 0.78rem);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .selected-asset-rule {
+            background: #ffffff;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: clamp(0.75rem, 2.4vw, 0.85rem);
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .selected-asset-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .selected-asset-eval {
+            font-size: clamp(1.1rem, 4vw, 1.3rem);
+            font-weight: bold;
+            color: #2b6cb0;
+        }
+
+        .selected-asset-profit {
+            font-size: clamp(0.8rem, 2.6vw, 0.95rem);
+            font-weight: bold;
         }
 
         .asset-item-card {
@@ -200,21 +284,25 @@
             padding: 10px;
             margin-bottom: 12px;
         }
+
         .asset-item-card.paused {
             background: #edf2f7;
             border-color: #a0aec0;
         }
+
         .asset-item-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
         }
+
         .asset-title {
             font-weight: bold;
             font-size: clamp(0.75rem, 2.5vw, 0.85rem);
             color: #2d3748;
         }
+
         .asset-status-badge {
             display: inline-block;
             font-size: clamp(0.62rem, 2vw, 0.7rem);
@@ -223,8 +311,16 @@
             font-weight: bold;
             margin-left: 4px;
         }
-        .asset-status-badge.active { background: #c6f6d5; color: #22543d; }
-        .asset-status-badge.paused { background: #e2e8f0; color: #4a5568; }
+
+        .asset-status-badge.active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .asset-status-badge.paused {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
 
         .asset-mini-summary {
             display: grid;
@@ -235,17 +331,20 @@
             border-radius: 8px;
             border: 1px solid #cbd5e0;
             margin-bottom: 10px;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
         }
+
         .mini-box {
             text-align: center;
         }
+
         .mini-box .m-label {
             font-size: clamp(0.6rem, 1.8vw, 0.68rem);
             color: #4a5568;
             font-weight: bold;
             margin-bottom: 2px;
         }
+
         .mini-box input {
             height: 32px;
             font-size: clamp(0.7rem, 2.2vw, 0.82rem);
@@ -255,6 +354,7 @@
             padding: 2px;
             border-radius: 6px;
         }
+
         .mini-box input[readonly] {
             background-color: #edf2f7;
             color: #4a5568;
@@ -270,6 +370,7 @@
             cursor: pointer;
             font-size: clamp(0.65rem, 2vw, 0.75rem);
         }
+
         .btn-add-asset {
             background-color: #319795;
             color: white;
@@ -281,6 +382,7 @@
             font-size: clamp(0.75rem, 2.5vw, 0.85rem);
             width: 100%;
         }
+
         button.btn-primary {
             width: 100%;
             height: 38px;
@@ -292,52 +394,67 @@
             font-weight: bold;
             cursor: pointer;
         }
+
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 8px;
         }
+
         .summary-box {
             background-color: #f8fafc;
             padding: 8px;
             border-radius: 8px;
             border-left: 4px solid var(--primary-color);
         }
+
         .summary-box .label {
             font-size: clamp(0.65rem, 2vw, 0.75rem);
             color: #718096;
         }
+
         .summary-box .value {
             font-size: clamp(0.78rem, 2.6vw, 0.9rem);
             font-weight: bold;
             margin-top: 2px;
             white-space: nowrap;
         }
-        .positive { color: var(--success-color); }
-        .negative { color: var(--danger-color); }
+
+        .positive {
+            color: var(--success-color);
+        }
+
+        .negative {
+            color: var(--danger-color);
+        }
 
         .chart-container {
             position: relative;
             height: clamp(220px, 45vh, 280px);
             width: 100%;
         }
+
         .table-scroll {
             overflow-x: auto;
             overflow-y: auto;
             max-height: 500px;
             -webkit-overflow-scrolling: touch;
         }
+
         table {
             width: 100%;
             min-width: 380px;
             border-collapse: collapse;
         }
-        th, td {
+
+        th,
+        td {
             padding: 6px 4px;
             text-align: right;
             border-bottom: 1px solid var(--border-color);
             font-size: clamp(0.68rem, 2.2vw, 0.8rem);
         }
+
         th {
             position: sticky;
             top: 0;
@@ -346,9 +463,14 @@
             font-weight: 600;
             z-index: 1;
         }
-        th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) {
+
+        th:first-child,
+        td:first-child,
+        th:nth-child(2),
+        td:nth-child(2) {
             text-align: center;
         }
+
         .asset-badge {
             display: inline-block;
             padding: 2px 4px;
@@ -358,6 +480,7 @@
             background-color: #e2e8f0;
             color: #4a5568;
         }
+
         .category-badge {
             display: inline-block;
             padding: 2px 4px;
@@ -368,12 +491,15 @@
             color: #c05621;
             margin-left: 2px;
         }
+
         .action-btns {
             display: flex;
             gap: 2px;
             justify-content: center;
         }
-        .edit-btn, .delete-btn {
+
+        .edit-btn,
+        .delete-btn {
             border: none;
             padding: 3px 6px;
             border-radius: 4px;
@@ -381,18 +507,28 @@
             font-size: clamp(0.65rem, 2vw, 0.75rem);
             font-weight: bold;
         }
-        .edit-btn { background-color: #feebc8; color: #dd6b20; }
-        .delete-btn { background-color: #fed7d7; color: #c53030; }
+
+        .edit-btn {
+            background-color: #feebc8;
+            color: #dd6b20;
+        }
+
+        .delete-btn {
+            background-color: #fed7d7;
+            color: #c53030;
+        }
 
         @media (max-width: 380px) {
             header {
                 flex-direction: column;
                 align-items: flex-start;
             }
+
             .header-controls {
                 width: 100%;
                 justify-content: space-between;
             }
+
             .filter-header-container select {
                 max-width: 130px;
             }
@@ -402,21 +538,26 @@
             header {
                 margin-bottom: 16px;
             }
+
             .tab-nav {
                 display: none;
             }
+
             .main-layout {
                 display: grid;
                 grid-template-columns: 1fr 1.1fr 1fr;
                 gap: 16px;
                 align-items: start;
             }
+
             .tab-content {
                 display: flex !important;
             }
+
             .chart-container {
                 height: 380px;
             }
+
             .table-scroll {
                 max-height: calc(100vh - 180px);
             }
@@ -424,7 +565,6 @@
     </style>
 </head>
 <body>
-
 <div class="dashboard-container">
     <header>
         <h1 data-i18n="title">📈 積立資産管理システム</h1>
@@ -484,6 +624,8 @@
                 <div class="chart-container">
                     <canvas id="growthChart"></canvas>
                 </div>
+                <!-- 선택된 자산의 상세 카드를 그래프 카드 하단부에배치 -->
+                <div id="selectedAssetDetailContainer"></div>
             </div>
         </div>
 
@@ -682,31 +824,25 @@
     };
 
     let currentLang = localStorage.getItem('dca_app_lang') || 'ja';
-
-    // 初期デフォルト値
     let assetRules = [
         { id: 'asset_1', category: 'つみたてNISA', name: 'オルカン (S&P500)', startDate: '2024-01-01', daily: 0, weekly: 0, monthly: 50000, status: 'PAUSED', pastStartDate: '2024-01-01', customDays: null, customPrincipal: null },
         { id: 'asset_2', category: '暗号通貨', name: 'GMO BTC', startDate: '2026-08-03', daily: 1000, weekly: 0, monthly: 0, status: 'ACTIVE', pastStartDate: '2024-11-14', customDays: null, customPrincipal: 314500 }
     ];
-
     let records = [
         { assetId: 'asset_1', date: '2024-01-01', evalAmt: 0 },
         { assetId: 'asset_1', date: '2026-08-03', evalAmt: 155000 },
         { assetId: 'asset_2', date: '2024-11-14', evalAmt: 0 },
         { assetId: 'asset_2', date: '2026-08-03', evalAmt: 555555 }
     ];
-
     let editingIndex = -1;
     let chartInstance = null;
 
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('langSelect').value = currentLang;
         document.getElementById('recordDate').valueAsDate = new Date();
-        
+
         applyLanguageUI();
         initChart();
-
-        // Firebase Firestore Realtime Sync
         loadFromFirebase();
     });
 
@@ -716,7 +852,6 @@
         }
     });
 
-    // --- Firebase Sync Functions ---
     function loadFromFirebase() {
         db.collection("app_data").doc("main").onSnapshot((doc) => {
             if (doc.exists) {
@@ -724,7 +859,6 @@
                 if (data.assetRules) assetRules = data.assetRules;
                 if (data.records) records = data.records;
             } else {
-                // 初回ドキュメント作成
                 saveToFirebase();
             }
             renderAssetRulesInputs();
@@ -782,10 +916,10 @@
 
     function switchTab(tabId, btnElement) {
         if (window.innerWidth >= 1024) return;
-        
+
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        
+
         document.getElementById(tabId).classList.add('active');
         btnElement.classList.add('active');
 
@@ -800,6 +934,7 @@
 
     function calculateDaysBetween(startDateStr, endDateStr) {
         if (!startDateStr || !endDateStr) return 0;
+
         const start = new Date(startDateStr + 'T00:00:00');
         const end = new Date(endDateStr + 'T00:00:00');
         return Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24)));
@@ -864,16 +999,14 @@
 
         assetRules.forEach((asset, idx) => {
             const isPaused = asset.status === 'PAUSED';
-            
+
             const latestRecord = records
                 .filter(r => r.assetId === asset.id)
                 .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-            
+
             const evalDateTarget = latestRecord ? latestRecord.date : getTodayISO();
-            
             const baseStartDateStr = asset.pastStartDate || asset.startDate || getTodayISO();
             const diffDays = calculateDaysBetween(baseStartDateStr, evalDateTarget);
-
             const evalAmt = latestRecord ? latestRecord.evalAmt : 0;
 
             const card = document.createElement('div');
@@ -988,9 +1121,8 @@
             customDays: null,
             customPrincipal: null
         });
-        
-        records.push({ assetId: newId, date: getTodayISO(), evalAmt: 0 });
 
+        records.push({ assetId: newId, date: getTodayISO(), evalAmt: 0 });
         saveToFirebase();
     }
 
@@ -1072,7 +1204,7 @@
 
         const asset = assetRules.find(a => a.id === assetId);
         const baseStartDateStr = asset ? (asset.pastStartDate || asset.startDate) : getTodayISO();
-        
+
         const diffDays = calculateDaysBetween(baseStartDateStr, dateStr);
         const principal = calculatePrincipalForAsset(asset, dateStr);
         const profit = evalAmt - principal;
@@ -1154,8 +1286,58 @@
         profitEl.innerText = `${sign}${profit.toLocaleString()} 円 (${sign}${profitRate}%)`;
         profitEl.className = `value ${profit >= 0 ? 'positive' : 'negative'}`;
 
+        renderSelectedAssetDetails(filteredAssets);
         renderHistoryTable();
         updateChart(filteredAssets);
+    }
+
+    function renderSelectedAssetDetails(filteredAssets) {
+        const container = document.getElementById('selectedAssetDetailContainer');
+        container.innerHTML = '';
+        const circledNums = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
+
+        filteredAssets.forEach((asset) => {
+            const latestRecord = records
+                .filter(r => r.assetId === asset.id)
+                .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+            const evalDateTarget = latestRecord ? latestRecord.date : getTodayISO();
+            const baseStartDateStr = asset.pastStartDate || asset.startDate || getTodayISO();
+            const diffDays = calculateDaysBetween(baseStartDateStr, evalDateTarget);
+            const evalAmt = latestRecord ? latestRecord.evalAmt : 0;
+            const principal = calculatePrincipalForAsset(asset, evalDateTarget);
+            const profit = evalAmt - principal;
+            const profitRate = principal > 0 ? ((profit / principal) * 100).toFixed(2) : "0.00";
+            const sign = profit > 0 ? "+" : "";
+
+            let ruleText = "";
+            if (asset.daily > 0) ruleText = `毎日 ¥${asset.daily.toLocaleString()} 定期積立`;
+            else if (asset.weekly > 0) ruleText = `毎週 ¥${asset.weekly.toLocaleString()} 定期積立`;
+            else if (asset.monthly > 0) ruleText = `毎月 ¥${asset.monthly.toLocaleString()} 定期積立`;
+            else ruleText = `積立設定なし`;
+
+            const originalIdx = assetRules.indexOf(asset);
+            const numMark = originalIdx >= 0 && originalIdx < circledNums.length ? circledNums[originalIdx] : (originalIdx + 1);
+
+            const card = document.createElement('div');
+            card.className = 'selected-asset-detail-card';
+            card.innerHTML = `
+                <div class="selected-asset-header">
+                    <span class="selected-asset-name">${numMark} ${asset.name}</span>
+                    <span class="selected-asset-days-badge">${diffDays}日経過</span>
+                </div>
+                <div class="selected-asset-rule">
+                    ${ruleText}
+                </div>
+                <div class="selected-asset-footer">
+                    <div class="selected-asset-eval">¥${evalAmt.toLocaleString()}</div>
+                    <div class="selected-asset-profit ${profit >= 0 ? 'positive' : 'negative'}">
+                        ${sign}${profit.toLocaleString()}円 (${sign}${profitRate}%)
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
     }
 
     function addRecord() {
@@ -1252,7 +1434,7 @@
 
         sortedRecords.forEach(r => {
             const asset = assetRules.find(a => a.id === r.assetId) || { name: '不明', category: '' };
-            
+
             const principal = calculatePrincipalForAsset(asset, r.date);
             const profit = r.evalAmt - principal;
             const rate = principal > 0 ? ((profit / principal) * 100).toFixed(2) : "0.00";
