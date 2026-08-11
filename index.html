@@ -229,7 +229,7 @@
             grid-template-columns: 1fr;
         }
 
-        /* 選択された資産の詳細カード（1行2列用にコンパクト化） */
+        /* 選択された資産の詳細カード */
         .selected-asset-detail-card {
             background: #fff5f5;
             border: 1.5px solid #3182ce;
@@ -1317,9 +1317,8 @@
     function renderSelectedAssetDetails(filteredAssets) {
         const container = document.getElementById('selectedAssetDetailContainer');
         container.innerHTML = '';
-        const circledNums = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
 
-        // 단일 자산 선택 시와 복수 자산(합계/카테고리) 선택 시에 맞게 클래스 전환
+        // 단일 자産 선택 시와 복수 자産 선택 시 레이아웃 제어
         if (filteredAssets.length === 1) {
             container.classList.add('single-mode');
         } else {
@@ -1346,14 +1345,11 @@
             else if (asset.monthly > 0) ruleText = `毎月 ¥${asset.monthly.toLocaleString()} 定期積立`;
             else ruleText = `積立設定なし`;
 
-            const originalIdx = assetRules.indexOf(asset);
-            const numMark = originalIdx >= 0 && originalIdx < circledNums.length ? circledNums[originalIdx] : (originalIdx + 1);
-
             const card = document.createElement('div');
             card.className = 'selected-asset-detail-card';
             card.innerHTML = `
                 <div class="selected-asset-header">
-                    <span class="selected-asset-name">${numMark} ${asset.name}</span>
+                    <span class="selected-asset-name">${asset.name}</span>
                     <span class="selected-asset-days-badge">${diffDays}日経過</span>
                 </div>
                 <div class="selected-asset-rule">
