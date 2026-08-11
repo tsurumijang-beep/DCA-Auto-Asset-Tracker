@@ -217,64 +217,87 @@
             margin-top: 2px;
         }
 
-        /* 選択された資産の詳細カード（グラフ下部に配置） */
+        /* 選択された資産の詳細カードコンテナ（1行2列グリッド対応） */
+        .selected-assets-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .selected-assets-grid.single-mode {
+            grid-template-columns: 1fr;
+        }
+
+        /* 選択された資産の詳細カード（1行2列用にコンパクト化） */
         .selected-asset-detail-card {
             background: #fff5f5;
-            border: 2px solid #3182ce;
-            border-radius: 12px;
-            padding: 12px;
-            margin-top: 12px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            border: 1.5px solid #3182ce;
+            border-radius: 10px;
+            padding: 8px 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .selected-asset-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
         .selected-asset-name {
             font-weight: bold;
-            font-size: clamp(0.85rem, 2.8vw, 0.95rem);
+            font-size: clamp(0.72rem, 2.3vw, 0.85rem);
             color: #2d3748;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .selected-asset-days-badge {
             background: #1a202c;
             color: #ffffff;
-            font-size: clamp(0.7rem, 2.2vw, 0.78rem);
-            padding: 3px 8px;
-            border-radius: 6px;
+            font-size: clamp(0.6rem, 1.8vw, 0.7rem);
+            padding: 2px 5px;
+            border-radius: 4px;
             font-weight: bold;
+            white-space: nowrap;
         }
 
         .selected-asset-rule {
             background: #ffffff;
             border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: clamp(0.75rem, 2.4vw, 0.85rem);
+            border-radius: 4px;
+            padding: 3px 6px;
+            font-size: clamp(0.65rem, 2vw, 0.75rem);
             color: #4a5568;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .selected-asset-footer {
             display: flex;
-            justify-content: space-between;
-            align-items: baseline;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .selected-asset-eval {
-            font-size: clamp(1.1rem, 4vw, 1.3rem);
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
             font-weight: bold;
             color: #2b6cb0;
+            line-height: 1.1;
         }
 
         .selected-asset-profit {
-            font-size: clamp(0.8rem, 2.6vw, 0.95rem);
+            font-size: clamp(0.68rem, 2.1vw, 0.8rem);
             font-weight: bold;
+            line-height: 1.1;
         }
 
         .asset-item-card {
@@ -624,8 +647,8 @@
                 <div class="chart-container">
                     <canvas id="growthChart"></canvas>
                 </div>
-                <!-- 선택된 자산의 상세 카드를 그래프 카드 하단부에배치 -->
-                <div id="selectedAssetDetailContainer"></div>
+                <!-- 1行に2資産が表示されるレスポンシブグリッドコンテナ -->
+                <div id="selectedAssetDetailContainer" class="selected-assets-grid"></div>
             </div>
         </div>
 
@@ -1295,6 +1318,13 @@
         const container = document.getElementById('selectedAssetDetailContainer');
         container.innerHTML = '';
         const circledNums = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
+
+        // 단일 자산 선택 시와 복수 자산(합계/카테고리) 선택 시에 맞게 클래스 전환
+        if (filteredAssets.length === 1) {
+            container.classList.add('single-mode');
+        } else {
+            container.classList.remove('single-mode');
+        }
 
         filteredAssets.forEach((asset) => {
             const latestRecord = records
