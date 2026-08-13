@@ -722,6 +722,16 @@
                     </table>
                 </div>
             </div>
+
+            <!-- 데이터 백업 및 복원 카드 추가 -->
+            <div class="card">
+                <h2>6. データバックアップ (JSON)</h2>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-primary" onclick="exportData()" style="background-color: #718096; margin-top: 0;">📥 データ抽出</button>
+                    <button class="btn-primary" onclick="document.getElementById('fileInput').click()" style="background-color: #38a169; margin-top: 0;">📤 データ挿入</button>
+                    <input type="file" id="fileInput" style="display:none" onchange="importData(event)" accept=".json">
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -883,6 +893,44 @@
         }
     });
 
+    // --- 데이터 백업 및 복원 기능 ---
+    function exportData() {
+        const data = {
+            assetRules: assetRules,
+            records: records,
+            exportedAt: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backup_tumitate_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (confirm("現在のデータを上書きして復元しますか？")) {
+                    assetRules = imported.assetRules || [];
+                    records = imported.records || [];
+                    
+                    saveToFirebase();
+                    alert("復元が完了しました。");
+                    location.reload();
+                }
+            } catch (err) {
+                alert("ファイル形式が正しくありません。");
+            }
+        };
+        reader.readAsText(file);
+    }
+
     function loadFromFirebase() {
         db.collection("app_data").doc("main").onSnapshot((doc) => {
             if (doc.exists) {
@@ -971,7 +1019,6 @@
         return Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24)));
     }
 
-    // targetDateStr 時点までの「定期積立元本 ＋ 過去の累計追加投資額」を計算
     function calculatePrincipalForAsset(asset, targetDateStr) {
         if (!asset) return 0;
 
@@ -1021,7 +1068,6 @@
             }
         }
 
-        // 対象日までのスポット追加投資額(addAmt)を全合計して元本にプラス
         let additionalSum = 0;
         if (targetDateStr) {
             records.forEach(r => {
@@ -1227,7 +1273,6 @@
         updateHeaderTitleText();
     }
 
-    // 記録入力時のプレビュー計算（追加投資額も反映）
     function updateRecordCalcPreview() {
         const assetId = document.getElementById('recordAssetSelect').value;
         const dateStr = document.getElementById('recordDate').value;
@@ -1251,10 +1296,8 @@
 
         const diffDays = calculateDaysBetween(baseStartDateStr, dateStr);
 
-        // 基本元本 ＋ 今回入力された追加投資額
         let principal = calculatePrincipalForAsset(asset, dateStr);
 
-        // 編集対象の既存レコードに含まれるaddAmtとの重複加算を避ける調整
         if (editingIndex >= 0 && records[editingIndex].assetId === assetId && records[editingIndex].date === dateStr) {
             principal -= (parseFloat(records[editingIndex].addAmt) || 0);
         } else {
